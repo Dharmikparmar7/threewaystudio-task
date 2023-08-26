@@ -30,57 +30,21 @@ class AudioFile(db.Model):
         self.duration = duration
         self.upload_at = upload_at
 
-def determine_file_type(file_path):
-    mime = magic.Magic()
-    file_type = mime.from_file(file_path)
-    return file_type
-
 @app.route("/", methods=['GET'])
 def home():
     audio_files = AudioFile.query.all()
-    total_duration = (db.session.query(func.sum(AudioFile.duration)).scalar())
-    total_duration = total_duration if total_duration else 0
-    return render_template('audio_files.html', audio_files=audio_files, total_duration=total_duration)
+    return render_template('audio_files.html', audio_files=audio_files, total_duration_warning=False)
 
-@app.route('/', methods=['POST'])
-def file_upload():
+@app.route("/", methods=['POST'])
+def handle_file_upload():
+    files = request.files.getlist('files[]')
+    responses = []
 
-    if 'file' not in request.files:
-        return 'no file found'
+    for file in files:
+        responses.append(save_file(file))
+        print(responses)
 
-    file = request.files['file']
-    file_path = os.path.join(app.root_path, app.config['UPLOAD_FOLDER'], file.filename)
-
-    if file :
-        file.save(file_path)
-
-    if "Audio" not in determine_file_type(file_path):
-        os.remove(file_path)
-        return "not an audio file"
-
-    duration = librosa.get_duration(path=file_path)
-    total_duration = (db.session.query(func.sum(AudioFile.duration)).scalar())
-    total_duration = total_duration if total_duration else 0
-
-    audio_files = AudioFile.query.all()
-    
-    if duration + total_duration > 600:
-        os.remove(file_path)
-        return render_template('audio_files.html', audio_files=audio_files, total_duration=duration + total_duration)
-
-    audioFile = AudioFile(
-        file.filename, 
-        file_path, 
-        file.filename.rsplit(".", 1)[1].lower(), 
-        date.today(),
-        round(bytes_to_megabytes(os.stat(path=file_path).st_size), 2),
-        duration
-    )
-
-    db.create_all()
-    db.session.add(audioFile)
-    db.session.commit()
-    return redirect("/", audio_files=audio_files, total_duration=0)
+    return redirect_to_home(responses=responses)
 
 @app.route('/delete_audio/<int:id>', methods=['POST'])
 def delete_audio(id):
@@ -93,6 +57,52 @@ def delete_audio(id):
 
 def bytes_to_megabytes(bytes_size):
     return bytes_size / (1024 ** 2)
+
+def redirect_to_home(total_duration_warning=False, responses=[]):
+    audio_files = AudioFile.query.all()
+    print(responses)
+    return render_template('audio_files.html', audio_files=audio_files, total_duration_warning=total_duration_warning, responses=responses)
+
+def save_file(file):
+    file_path = os.path.join(app.root_path, app.config['UPLOAD_FOLDER'], file.filename)
+
+    if file :
+        file.save(file_path)
+
+    if "Audio" not in determine_file_type(file_path):
+        os.remove(file_path)
+        return "not an audio file"
+
+    duration = librosa.get_duration(path=file_path)
+    total_duration = (db.session.query(func.sum(AudioFile.duration)).scalar())
+    total_duration = total_duration if total_duration else 0
+    
+    if duration + total_duration > 600:
+        os.remove(file_path)
+        return "total duration exceeds"
+
+    ext = ""
+    if len(file.filename.rsplit(".")) >= 2:
+        ext = file.filename.rsplit(".", 1)[1].lower()
+
+    audioFile = AudioFile(
+        file.filename, 
+        file_path, 
+        ext, 
+        date.today(),
+        round(bytes_to_megabytes(os.stat(path=file_path).st_size), 2),
+        duration
+    )
+
+    db.create_all()
+    db.session.add(audioFile)
+    db.session.commit()
+    return "saved"
+
+def determine_file_type(file_path):
+    mime = magic.Magic()
+    file_type = mime.from_file(file_path)
+    return file_type
 
 if __name__ == '__main__':
     app.run(debug=True)

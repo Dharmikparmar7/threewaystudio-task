@@ -6,17 +6,21 @@
 <body>
     <title>Upload new File</title>
     <h1>Upload new File</h1>
-    <form method=post enctype=multipart/form-data action="/">
-      <input type=file name=file>
+    <form method=post enctype=multipart/form-data action="/" >
+      <input type=file name="files[]" multiple>
       <input type=submit value=Upload>
     </form>
 
-    {% if total_duration > 600 %}
+    {% if total_duration_warning == True %}
         <h2>Your Total Duration Exceeds 10 Minutes</h2>
     {% endif %}
 
 
     <h1>Audio Files</h1>
+
+    {% for res in responses %}
+        <p style="margin: 10px;"> File {{ loop.index }} is {{ res }}</p>
+    {% endfor %}
     <table>
         <tr>
             <th>Name</th>
