@@ -25,12 +25,15 @@ This is a Flask-based web application for uploading, managing, and playing audio
 
 3. Create database manually in MySQL
 
+
 ## Usage
 
-1. Run the application: `python main.py`
+1. pip install -r requirements.txt
 
-2. Access the application in your web browser at `http://localhost:5000`.
+2. Run the application: `python main.py`
 
-3. The homepage will prompt you to enter a username for managing audio files.
+3. Access the application in your web browser at `http://localhost:5000`.
 
-4. Once logged in, you can upload audio files, play them, and view the list of uploaded files.
+4. The homepage will prompt you to enter a username for managing audio files.
+
+5. Once logged in, you can upload audio files, play them, and view the list of uploaded files.
