@@ -6,15 +6,10 @@
 <body>
     <title>Upload new File</title>
     <h1>Upload new File</h1>
-    <form method=post enctype=multipart/form-data action="/" >
+    <form method=post enctype=multipart/form-data action="/upload" >
       <input type=file name="files[]" multiple>
       <input type=submit value=Submit>
     </form>
-
-    <!-- Display 10 Minutes warning  -->
-    {% if total_duration_warning == True %}
-        <h2>Your Total Duration Exceeds 10 Minutes</h2>
-    {% endif %}
 
     <h1>Audio Files</h1>
 

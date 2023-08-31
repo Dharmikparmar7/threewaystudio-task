@@ -17,7 +17,7 @@ Modules and Packages:
 
 import os
 import magic
-from flask import Flask, request, render_template, redirect, abort
+from flask import Flask, request, render_template, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
 import librosa
@@ -68,7 +68,7 @@ def index():
     username = ""
     return render_template("index.html")
 
-@app.route("/upload", methods=['GET', 'POST'])
+@app.route("/dashboard", methods=['GET', 'POST'])
 def dashboard():
     """
     Route for Displaying the Dashboard
@@ -84,10 +84,9 @@ def dashboard():
 
     db.create_all()
 
-    audio_files_by_username = AudioFile.query.filter_by(username=username).all()
-    return render_template('dashboard.html', audio_files=audio_files_by_username, total_duration_warning=False)
+    return render_dashboard()
 
-@app.route("/", methods=['POST'])
+@app.route("/upload", methods=['POST'])
 def handle_file_upload():
     """
     Route for Handling File Uploads
@@ -100,7 +99,15 @@ def handle_file_upload():
     for file in files:
         responses.append(save_file(file, username))
 
-    return redirect_to_home(responses=responses)
+    return render_dashboard(responses=responses)
+
+def render_dashboard(responses=[]):
+    """
+    Function for rendering Dashboard
+    """
+    audio_files_by_username = AudioFile.query.filter_by(username=username).all()
+
+    return render_template('dashboard.html', audio_files=audio_files_by_username, responses=responses)
 
 def bytes_to_megabytes(bytes_size):
     """
@@ -108,16 +115,7 @@ def bytes_to_megabytes(bytes_size):
 
     Converts bytes to megabytes for displaying file sizes.
     """
-    return bytes_size / (1024 ** 2)
-
-def redirect_to_home(total_duration_warning=False, responses=[]):
-    """
-    Redirect to Homepage
-
-    Redirects to the homepage and displays responses and audio files.
-    """
-    audio_files_by_username = AudioFile.query.filter_by(username=username).all()
-    return render_template('dashboard.html', audio_files=audio_files_by_username, total_duration_warning=total_duration_warning, responses=responses)
+    return bytes_size / (1024 ** 2)    
 
 def save_file(file, username):
     """
@@ -125,10 +123,10 @@ def save_file(file, username):
 
     Saves the uploaded file, performs checks, calculates duration, and adds audio file data to the database.
     """
-    file_path = os.path.join(app.root_path, app.config['UPLOAD_FOLDER'], file.filename)
-
     if not file:
         return "File not selected"
+    
+    file_path = os.path.join(app.root_path, app.config['UPLOAD_FOLDER'], file.filename)
 
     file.save(file_path)
 
